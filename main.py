@@ -43,6 +43,40 @@ async def help(message: Message):
     )
     await message.answer(help_text)
 
+# 2. Хэндлер для сохранения фото в папке img
+@dp.message(F.photo)
+async def save_photo(message: Message):
+    # Получаем последнее фото в наилучшем качестве
+    photo = message.photo[-1]
+    # Скачиваем фото
+    file_path = f"img/{photo.file_id}.jpg"
+    await bot.download(photo, destination=file_path)
+    await message.answer("Фото сохранено!")
+    logger.info(f"Фото сохранено: {file_path}")
+
+# 3. Хэндлер для отправки голосового сообщения (текст заранее подготовлен)
+@dp.message(Command("voice"))
+async def send_voice(message: Message):
+    text = "Это голосовое сообщение отправлено ботом!"
+    tts = gTTS(text=text, lang='ru')  # Генерируем голосовое сообщение
+    tts.save("voice_message.ogg")     # Сохраняем в файл
+    audio = FSInputFile("voice_message.ogg")
+    await bot.send_voice(message.chat.id, voice=audio)
+    os.remove("voice_message.ogg")  # Удаляем временный файл
+    await message.answer("Голосовое сообщение отправлено!")
+
+# 4. Хэндлер для перевода любого текста пользователя на английский язык
+@dp.message(F.text)
+async def translate_text(message: Message):
+    original_text = message.text
+    try:
+        # Перевод текста на английский язык
+        translation = translator.translate(original_text, dest='en')
+        await message.answer(f"**Текст на английском:**\n{translation.text}")
+    except Exception as e:
+        logger.error(f"Ошибка перевода: {e}")
+        await message.answer("Произошла ошибка при переводе текста. Попробуйте позже.")
+
 
 # ================= Запуск бота ================= #
 async def main():
